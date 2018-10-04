@@ -57,6 +57,68 @@ services:
     networks:
       - frontend
       - backend
+  mailu-front:
+    image: mailu/nginx:${MAILU_VERSION}
+    environment:
+      - ADMIN=${MAILU_ADMIN}
+      - WEB_ADMIN=${MAILU_WEB_ADMIN}
+      - WEB_WEBMAIL=${MAILU_WEB_WEBMAIL}
+      - WEBDAV=${MAILU_WEBDAV}
+      - HOSTNAMES=${MAILU_HOSTNAMES}
+      - TLS_FLAVOR=${MAILU_TLS_FLAVOR}
+      - MESSAGE_SIZE_LIMIT=${MAILU_MESSAGE_SIZE_LIMIT}
+    ports:
+      - "${MAILU_HTTP_PORT}:80"
+      - "${MAILU_HTTPS_PORT}:443"
+      - "110:110"
+      - "143:143"
+      - "993:993"
+      - "995:995"
+      - "25:25"
+      - "465:465"
+      - "587:587"
+    volumes:
+      - "${DATA_PATH_HOST}/mailu/certs:/certs"
+    networks:
+      backend:
+        aliases:
+          - front
+  mailu-imap:
+    image: mailu/dovecot:${MAILU_VERSION}
+    environment:
+      - DOMAIN=${MAILU_DOMAIN}
+      - HOSTNAMES=${MAILU_HOSTNAMES}
+      - POSTMASTER=${MAILU_POSTMASTER}
+      - WEBMAIL=${MAILU_WEBMAIL}
+      - RECIPIENT_DELIMITER=${MAILU_RECIPIENT_DELIMITER}
+    volumes:
+      - "${DATA_PATH_HOST}/mailu/data:/data"
+      - "${DATA_PATH_HOST}/mailu/mail:/mail"
+      - "${DATA_PATH_HOST}/mailu/overrides:/overrides"
+    depends_on:
+      - mailu-front
+    networks:
+      backend:
+        aliases:
+          - imap
+  mailu-smtp:
+    image: mailu/postfix:${MAILU_VERSION}
+    environment:
+      - DOMAIN=${MAILU_DOMAIN}
+      - HOSTNAMES=${MAILU_HOSTNAMES}
+      - RELAYHOST=${MAILU_RELAYHOST}
+      - RELAYNETS=${MAILU_RELAYNETS}
+      - RECIPIENT_DELIMITER=${MAILU_RECIPIENT_DELIMITER}
+      - MESSAGE_SIZE_LIMIT=${MAILU_MESSAGE_SIZE_LIMIT}
+    volumes:
+      - "${DATA_PATH_HOST}/mailu/data:/data"
+      - "${DATA_PATH_HOST}/mailu/overrides:/overrides"
+    depends_on:
+      - mailu-front
+    networks:
+      backend:
+        aliases:
+          - smtp
 
 networks:
   frontend:
